@@ -11,6 +11,7 @@ const float THRESHOLD_MIN_DISTANCE = 1.5; // min distance to show trail (units o
 const float BLUR = 1.0; // blur size in pixels (for antialiasing)
 const float TRAIL_THICKNESS = 1.0;  // 1.0 = full cursor height, 0.0 = zero height, >1.0 = funky aah
 const float TRAIL_THICKNESS_X = 0.9;
+const float DEBOUNCE = 0.025; // seconds to wait before showing trail (suppresses TUI redraw flicker)
 
 const float FADE_ENABLED = 0.0; // 1.0 to enable fade gradient along the trail, 0.0 to disable
 const float FADE_EXPONENT = 5.0; // exponent for fade gradient along the trail
@@ -174,8 +175,9 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord){
     vec4 newColor = vec4(fragColor);
 
     float baseProgress = iTime - iTimeCursorChange;
+    float animProgress = baseProgress - DEBOUNCE;
     
-    if (lineLength > minDist && baseProgress < DURATION - 0.001) {
+    if (lineLength > minDist && animProgress > 0.0 && animProgress < DURATION - 0.001) {
         // defining corners of cursors
 
         // Y (Height) with TRAIL_THICKNESS
@@ -253,10 +255,10 @@ void mainImage(out vec4 fragColor, in vec2 fragCoord){
         float final_dur_br = mix(dur_br, dur_right_rail, isMovingRight);
 
         // calculate progress for each corner based on the duration and time since cursor change
-        float prog_tl = ease(clamp(baseProgress / final_dur_tl, 0.0, 1.0));
-        float prog_tr = ease(clamp(baseProgress / final_dur_tr, 0.0, 1.0));
-        float prog_bl = ease(clamp(baseProgress / final_dur_bl, 0.0, 1.0));
-        float prog_br = ease(clamp(baseProgress / final_dur_br, 0.0, 1.0));
+        float prog_tl = ease(clamp(animProgress / final_dur_tl, 0.0, 1.0));
+        float prog_tr = ease(clamp(animProgress / final_dur_tr, 0.0, 1.0));
+        float prog_bl = ease(clamp(animProgress / final_dur_bl, 0.0, 1.0));
+        float prog_br = ease(clamp(animProgress / final_dur_br, 0.0, 1.0));
 
         // get the trial corner positions based on progress
         vec2 v_tl = mix(cp_tl, cc_tl, prog_tl);
